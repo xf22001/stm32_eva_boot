@@ -6,7 +6,7 @@
  *   文件名称：usb_upgrade.c
  *   创 建 者：肖飞
  *   创建日期：2021年05月08日 星期六 20时15分37秒
- *   修改日期：2021年05月08日 星期六 21时05分39秒
+ *   修改日期：2021年05月08日 星期六 21时50分14秒
  *   描    述：
  *
  *================================================================*/
@@ -32,17 +32,36 @@ void start_usb_upgrade(void)
 	}
 }
 
+typedef enum {
+	FW_TYPE_NONE = 0,
+	FW_TYPE_BOOTLOADER,
+	FW_TYPE_APP,
+} fw_type_t;
+
+#pragma pack(push, 1)
+
+typedef struct {
+	uint32_t crc;
+	uint32_t id;
+	uint8_t fw_type;
+} fw_header_t;
+
+#pragma pack(pop)
+
 static int check_firmware(void)
 {
 	int ret = -1;
 	FIL file;
 	FRESULT r;
-	uint32_t fw_crc;
+	fw_header_t fw_header;
 	uint32_t crc = 0;
 	UINT read;
 	uint8_t buffer[16];
 	FILINFO file_info;
 	uint32_t count = 0;
+	//0x411 f207
+	//0x413 f407
+	uint32_t id = DBGMCU->IDCODE & DBGMCU_IDCODE_DEV_ID;
 
 	r = mt_f_stat("/fw.bin", &file_info)					/* Get file status */;
 
@@ -58,24 +77,34 @@ static int check_firmware(void)
 		goto exit;
 	}
 
-	if(file_info.fsize < sizeof(fw_crc)) {
+	if(file_info.fsize < sizeof(fw_header)) {
 		debug("");
 		goto exit;
 	}
 
-	r = mt_f_read(&file, &fw_crc, sizeof(fw_crc), &read);
+	r = mt_f_read(&file, &fw_header, sizeof(fw_header), &read);
 
 	if(r != FR_OK) {
 		debug("");
 		goto close;
 	}
 
-	if(read != sizeof(fw_crc)) {
+	if(read != sizeof(fw_header)) {
 		debug("");
 		goto close;
 	}
 
-	count += sizeof(fw_crc);
+	if(fw_header.id != id) {
+		debug("");
+		goto close;
+	}
+
+	if(fw_header.fw_type != FW_TYPE_APP) {
+		debug("");
+		goto close;
+	}
+
+	count += sizeof(fw_header);
 
 	while(count < file_info.fsize) {
 		r = mt_f_read(&file, buffer, 16, &read);
@@ -89,7 +118,7 @@ static int check_firmware(void)
 		crc += sum_crc32(buffer, read);
 	}
 
-	if(crc == fw_crc) {
+	if(crc == fw_header.crc) {
 		debug("ok!");
 		ret = 0;
 	}
@@ -106,7 +135,7 @@ static int flush_firmware(void)
 	FIL file;
 	FRESULT r;
 	UINT read;
-	uint32_t fw_crc = 0;
+	fw_header_t fw_header;
 	uint32_t crc = 0;
 	uint8_t buffer[16];
 	FILINFO file_info;
@@ -133,19 +162,19 @@ static int flush_firmware(void)
 		goto exit;
 	}
 
-	r = mt_f_read(&file, &fw_crc, sizeof(fw_crc), &read);
+	r = mt_f_read(&file, &fw_header, sizeof(fw_header), &read);
 
 	if(r != FR_OK) {
 		debug("");
 		goto close;
 	}
 
-	if(read != sizeof(fw_crc)) {
+	if(read != sizeof(fw_header)) {
 		debug("");
 		goto close;
 	}
 
-	count += sizeof(fw_crc);
+	count += sizeof(fw_header);
 
 	while(count < file_info.fsize) {
 		r = mt_f_read(&file, buffer, 16, &read);
@@ -166,7 +195,7 @@ static int flush_firmware(void)
 
 	crc = sum_crc32((void *)USER_FLASH_FIRST_PAGE_ADDRESS, offset);
 
-	if(crc == fw_crc) {
+	if(crc == fw_header.crc) {
 		uint8_t flag = 0x01;
 
 		if(flash_write(APP_CONFIG_ADDRESS, &flag, 1) != 0) {
