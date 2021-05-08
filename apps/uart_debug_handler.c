@@ -6,13 +6,13 @@
  *   文件名称：uart_debug_handler.c
  *   创 建 者：肖飞
  *   创建日期：2020年05月13日 星期三 13时18分00秒
- *   修改日期：2021年05月08日 星期六 21时12分55秒
+ *   修改日期：2021年05月08日 星期六 22时58分27秒
  *   描    述：
  *
  *================================================================*/
 #include "uart_debug_handler.h"
 
-#include "iap.h"
+#include "app.h"
 #include "log.h"
 
 static void fn1(char *arguments)
@@ -22,6 +22,13 @@ static void fn1(char *arguments)
 
 static void fn2(char *arguments)
 {
+#if defined(USER_APP)
+	app_info_t *app_info = get_app_info();
+	app_info->mechine.upgrade_enable = 1;
+	app_save_config();
+	_printf("enable upgrade! resetting...\n");
+	HAL_NVIC_SystemReset();
+#endif
 }
 
 uint16_t osGetCPUUsage(void);
