@@ -24,7 +24,6 @@
 #include "mbedtls.h"
 
 /* USER CODE BEGIN 0 */
-#include "net_sockets.h"
 /* USER CODE END 0 */
 
 /* USER CODE BEGIN 1 */
@@ -43,7 +42,6 @@ void MX_MBEDTLS_Init(void)
    /**
   */
   /* USER CODE BEGIN 3 */
-  mbedtls_net_init(NULL);
   /* USER CODE END 3 */
 
 }

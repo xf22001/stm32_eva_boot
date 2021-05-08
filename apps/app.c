@@ -6,7 +6,7 @@
  *   文件名称：app.c
  *   创 建 者：肖飞
  *   创建日期：2019年10月11日 星期五 16时54分03秒
- *   修改日期：2021年05月08日 星期六 12时55分32秒
+ *   修改日期：2021年05月08日 星期六 13时30分36秒
  *   描    述：
  *
  *================================================================*/
@@ -21,7 +21,6 @@
 
 #include "os_utils.h"
 #include "usart_txrx.h"
-#include "probe_tool.h"
 #include "file_log.h"
 #include "uart_debug.h"
 
@@ -56,9 +55,7 @@ int app_save_config(void)
 void app(void const *argument)
 {
 
-	poll_loop_t *poll_loop;
 	add_log_handler((log_fn_t)log_uart_data);
-	add_log_handler((log_fn_t)log_udp_data);
 	add_log_handler((log_fn_t)log_file_data);
 
 	{
@@ -73,15 +70,6 @@ void app(void const *argument)
 		osThreadDef(uart_debug, task_uart_debug, osPriorityNormal, 0, 128 * 2 * 2);
 		osThreadCreate(osThread(uart_debug), uart_info);
 	}
-
-	poll_loop = get_or_alloc_poll_loop(0);
-
-	if(poll_loop == NULL) {
-		app_panic();
-	}
-
-	probe_broadcast_add_poll_loop(poll_loop);
-	probe_server_add_poll_loop(poll_loop);
 
 	//while(is_log_server_valid() == 0) {
 	//	osDelay(1);

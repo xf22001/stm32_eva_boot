@@ -56,7 +56,6 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-extern ETH_HandleTypeDef heth;
 extern HCD_HandleTypeDef hhcd_USB_OTG_FS;
 extern CAN_HandleTypeDef hcan1;
 extern CAN_HandleTypeDef hcan2;
@@ -357,20 +356,6 @@ void DMA2_Stream2_IRQHandler(void)
   /* USER CODE BEGIN DMA2_Stream2_IRQn 1 */
 
   /* USER CODE END DMA2_Stream2_IRQn 1 */
-}
-
-/**
-  * @brief This function handles Ethernet global interrupt.
-  */
-void ETH_IRQHandler(void)
-{
-  /* USER CODE BEGIN ETH_IRQn 0 */
-
-  /* USER CODE END ETH_IRQn 0 */
-  HAL_ETH_IRQHandler(&heth);
-  /* USER CODE BEGIN ETH_IRQn 1 */
-
-  /* USER CODE END ETH_IRQn 1 */
 }
 
 /**
