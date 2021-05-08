@@ -79,6 +79,12 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 
+#if defined(USER_APP)
+  SCB->VTOR = USER_FLASH_FIRST_PAGE_ADDRESS; /* Vector Table Relocation in Internal FLASH */
+#else
+  jump_to_app();
+#endif
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/

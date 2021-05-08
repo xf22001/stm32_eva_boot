@@ -6,7 +6,7 @@
  *   文件名称：usbh_user_callback.c
  *   创 建 者：肖飞
  *   创建日期：2021年03月25日 星期四 14时15分22秒
- *   修改日期：2021年03月25日 星期四 14时34分10秒
+ *   修改日期：2021年05月08日 星期六 16时03分33秒
  *   描    述：
  *
  *================================================================*/
@@ -15,6 +15,7 @@
 #include "mt_file.h"
 #include "file_log.h"
 #include "vfs.h"
+#include "upgrade.h"
 
 void usbh_user_callback(USBH_HandleTypeDef *phost, uint8_t id)
 {
@@ -37,7 +38,8 @@ void usbh_user_callback(USBH_HandleTypeDef *phost, uint8_t id)
 		case HOST_USER_CLASS_ACTIVE: {
 			ret = mt_f_mount(get_vfs_fs(), "", 0);
 
-			if(ret != FR_OK) {
+			if(ret == FR_OK) {
+				start_upgrade();
 			}
 		}
 		break;

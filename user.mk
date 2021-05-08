@@ -6,7 +6,7 @@
 #   文件名称：user.mk
 #   创 建 者：肖飞
 #   创建日期：2019年10月25日 星期五 13时04分38秒
-#   修改日期：2021年05月08日 星期六 13时29分56秒
+#   修改日期：2021年05月08日 星期六 15时17分55秒
 #   描    述：
 #
 #================================================================
@@ -25,6 +25,7 @@ USER_C_SOURCES += apps/uart_debug_handler.c
 USER_C_SOURCES += apps/os_memory.c
 USER_C_SOURCES += apps/early_sys_callback.c
 USER_C_SOURCES += apps/usbh_user_callback.c
+USER_C_SOURCES += apps/upgrade.c
 
 USER_C_SOURCES += apps/modules/app/eeprom_config.c
 USER_C_SOURCES += apps/modules/app/uart_debug.c
@@ -58,9 +59,37 @@ USER_CFLAGS += -DtraceTASK_SWITCHED_IN=StartIdleMonitor -DtraceTASK_SWITCHED_OUT
 CFLAGS += $(USER_CFLAGS)
 LDFLAGS += -u _printf_float
 
+IAP_FILE := apps/modules/os/iap.h
+
+define update-iap-include
+	if [ -f $(IAP_FILE) ]; then
+		touch $(IAP_FILE);
+	fi
+endef
+
+ifeq ("$(origin APP)", "command line")
+build-type := .app.stamps
+build-type-invalid := .bootloader.stamps
+CFLAGS += -DUSER_APP
+LDSCRIPT = STM32F207VETx_FLASH_APP.ld
+#$(info $(shell $(update-iap-include)))
+$(info "build app!")
+else
+build-type := .bootloader.stamps
+build-type-invalid := .app.stamps
+LDSCRIPT = STM32F207VETx_FLASH.ld
+#$(info $(shell $(update-iap-include)))
+$(info "build bootloader!")
+endif
+
 default: all
 
-all :
+all : $(build-type)
+
+$(build-type) :
+	-rm $(build-type-invalid)
+	$(shell $(update-iap-include))
+	touch $@
 
 cscope: all
 	rm cscope e_cs -rf

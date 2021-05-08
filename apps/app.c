@@ -6,7 +6,7 @@
  *   文件名称：app.c
  *   创 建 者：肖飞
  *   创建日期：2019年10月11日 星期五 16时54分03秒
- *   修改日期：2021年05月08日 星期六 13时30分36秒
+ *   修改日期：2021年05月08日 星期六 17时08分27秒
  *   描    述：
  *
  *================================================================*/
@@ -23,6 +23,7 @@
 #include "usart_txrx.h"
 #include "file_log.h"
 #include "uart_debug.h"
+#include "upgrade.h"
 
 #include "log.h"
 
@@ -91,18 +92,19 @@ void app(void const *argument)
 
 	if(app_load_config() == 0) {
 		debug("app_load_config successful!");
-		debug("device id:\'%s\', server host:\'%s\', server port:\'%s\'!", app_info->mechine.device_id, app_info->mechine.host, app_info->mechine.port);
+		debug("device id:\'%s\'!", app_info->mechine.device_id);
 		app_info->available = 1;
 	} else {
 		debug("app_load_config failed!");
 		snprintf(app_info->mechine.device_id, sizeof(app_info->mechine.device_id), "%s", "0000000000");
-		snprintf(app_info->mechine.host, sizeof(app_info->mechine.host), "%s", "112.74.40.227");
-		snprintf(app_info->mechine.port, sizeof(app_info->mechine.port), "%s", "12345");
-		snprintf(app_info->mechine.path, sizeof(app_info->mechine.path), "%s", "");
-		debug("device id:\'%s\', server host:\'%s\', server port:\'%s\'!", app_info->mechine.device_id, app_info->mechine.host, app_info->mechine.port);
+		debug("device id:\'%s\'!", app_info->mechine.device_id);
 		app_save_config();
 		app_info->available = 1;
 	}
+
+#if !defined(USER_APP)
+	start_usb_upgrade();
+#endif
 
 	while(1) {
 		//handle_open_log();
