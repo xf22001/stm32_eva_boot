@@ -3,10 +3,10 @@
 #================================================================
 #   
 #   
-#   文件名称：crc.py
+#   文件名称：fw.py
 #   创 建 者：肖飞
-#   创建日期：2021年05月08日 星期六 15时24分04秒
-#   修改日期：2021年05月08日 星期六 15时37分54秒
+#   创建日期：2021年05月08日 星期六 21时18分56秒
+#   修改日期：2021年05月08日 星期六 21时26分18秒
 #   描    述：
 #
 #================================================================
@@ -21,11 +21,12 @@ def gen_fw_crc(fw_file):
     crc = 0
     for i,j in enumerate(content):
         crc += j
-    print(hex(crc))
-    des = '<I'
-    data = struct.pack(des, crc)
-    with open('fw.crc', 'wb') as f:
+    fw_len = len(content)
+    des = '<I%ss' %(fw_len)
+    data = struct.pack(des, crc, content)
+    with open('fw.bin', 'wb') as f:
         f.write(data)
+    print('generate fw.bin successful! size %s, crc:%s.' %(len(data), hex(crc)))
 
 def main(argv):
     options = optparse.OptionParser()
