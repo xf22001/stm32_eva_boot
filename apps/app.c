@@ -6,7 +6,7 @@
  *   文件名称：app.c
  *   创 建 者：肖飞
  *   创建日期：2019年10月11日 星期五 16时54分03秒
- *   修改日期：2021年05月08日 星期六 21时10分46秒
+ *   修改日期：2021年05月08日 星期六 22时52分33秒
  *   描    述：
  *
  *================================================================*/
@@ -108,6 +108,7 @@ void app(void const *argument)
 	} else {
 		debug("app_load_config failed!");
 		snprintf(app_info->mechine.device_id, sizeof(app_info->mechine.device_id), "%s", "0000000000");
+		app_info->mechine.upgrade_enable = 0;
 		debug("device id:\'%s\'!", app_info->mechine.device_id);
 		app_save_config();
 		app_info->available = 1;

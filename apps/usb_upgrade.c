@@ -6,7 +6,7 @@
  *   文件名称：usb_upgrade.c
  *   创 建 者：肖飞
  *   创建日期：2021年05月08日 星期六 20时15分37秒
- *   修改日期：2021年05月08日 星期六 21时50分14秒
+ *   修改日期：2021年05月08日 星期六 22时54分17秒
  *   描    述：
  *
  *================================================================*/
@@ -14,6 +14,7 @@
 #include "mt_file.h"
 #include "flash.h"
 #include "iap.h"
+#include "app.h"
 
 #include "log.h"
 
@@ -28,7 +29,17 @@ static usb_upgrade_state_t state = USB_UPGRADE_STATE_IDLE;
 void start_usb_upgrade(void)
 {
 	if(state == USB_UPGRADE_STATE_IDLE) {
+#if defined(USER_APP)
+		app_info_t *app_info = get_app_info();
+		if(app_info->mechine.upgrade_enable != 0) {
+			state = USB_UPGRADE_STATE_CHECK_FIRMWARE;
+		} else {
+			debug("");
+		}
+
+#else
 		state = USB_UPGRADE_STATE_CHECK_FIRMWARE;
+#endif
 	}
 }
 
@@ -238,10 +249,9 @@ void handle_usb_upgrade(void)
 			int ret = flush_firmware();
 
 			if(ret == 0) {
-				if(mt_f_unlink("fw.bin") != FR_OK) {
-					debug("");
-				}
-
+				app_info_t *app_info = get_app_info();
+				app_info->mechine.upgrade_enable = 0;
+				app_save_config();
 				HAL_NVIC_SystemReset();
 			}
 		}
