@@ -6,7 +6,7 @@
 #   文件名称：user.mk
 #   创 建 者：肖飞
 #   创建日期：2019年10月25日 星期五 13时04分38秒
-#   修改日期：2021年05月08日 星期六 15时17分55秒
+#   修改日期：2021年05月08日 星期六 21时04分04秒
 #   描    述：
 #
 #================================================================
@@ -25,7 +25,7 @@ USER_C_SOURCES += apps/uart_debug_handler.c
 USER_C_SOURCES += apps/os_memory.c
 USER_C_SOURCES += apps/early_sys_callback.c
 USER_C_SOURCES += apps/usbh_user_callback.c
-USER_C_SOURCES += apps/upgrade.c
+USER_C_SOURCES += apps/usb_upgrade.c
 
 USER_C_SOURCES += apps/modules/app/eeprom_config.c
 USER_C_SOURCES += apps/modules/app/uart_debug.c

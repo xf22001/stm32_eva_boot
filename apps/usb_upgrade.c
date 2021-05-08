@@ -3,19 +3,34 @@
 /*================================================================
  *
  *
- *   文件名称：upgrade.c
+ *   文件名称：usb_upgrade.c
  *   创 建 者：肖飞
- *   创建日期：2021年05月08日 星期六 13时42分36秒
- *   修改日期：2021年05月08日 星期六 17时12分24秒
+ *   创建日期：2021年05月08日 星期六 20时15分37秒
+ *   修改日期：2021年05月08日 星期六 21时05分39秒
  *   描    述：
  *
  *================================================================*/
-#include "upgrade.h"
+#include "usb_upgrade.h"
 #include "mt_file.h"
 #include "flash.h"
 #include "iap.h"
 
 #include "log.h"
+
+typedef enum {
+	USB_UPGRADE_STATE_IDLE = 0,
+	USB_UPGRADE_STATE_CHECK_FIRMWARE,
+	USB_UPGRADE_STATE_FLUSH_FIRMWARE,
+} usb_upgrade_state_t;
+
+static usb_upgrade_state_t state = USB_UPGRADE_STATE_IDLE;
+
+void start_usb_upgrade(void)
+{
+	if(state == USB_UPGRADE_STATE_IDLE) {
+		state = USB_UPGRADE_STATE_CHECK_FIRMWARE;
+	}
+}
 
 static int check_firmware(void)
 {
@@ -29,9 +44,21 @@ static int check_firmware(void)
 	FILINFO file_info;
 	uint32_t count = 0;
 
-	r = mt_f_open(&file, "/fw.crc", FA_READ);
+	r = mt_f_stat("/fw.bin", &file_info)					/* Get file status */;
 
 	if(r != FR_OK) {
+		debug("");
+		goto exit;
+	}
+
+	r = mt_f_open(&file, "/fw.bin", FA_READ);
+
+	if(r != FR_OK) {
+		debug("");
+		goto exit;
+	}
+
+	if(file_info.fsize < sizeof(fw_crc)) {
 		debug("");
 		goto exit;
 	}
@@ -48,31 +75,13 @@ static int check_firmware(void)
 		goto close;
 	}
 
-	r = mt_f_close(&file);
-
-	if(r != FR_OK) {
-		debug("");
-		goto exit;
-	}
-
-	r = mt_f_stat("/fw.bin", &file_info)					/* Get file status */;
-
-	if(r != FR_OK) {
-		debug("");
-		goto exit;
-	}
-
-	r = mt_f_open(&file, "/fw.bin", FA_READ);
-
-	if(r != FR_OK) {
-		debug("");
-		goto exit;
-	}
+	count += sizeof(fw_crc);
 
 	while(count < file_info.fsize) {
 		r = mt_f_read(&file, buffer, 16, &read);
 
 		if(r != FR_OK) {
+			debug("");
 			goto close;
 		}
 
@@ -102,6 +111,7 @@ static int flush_firmware(void)
 	uint8_t buffer[16];
 	FILINFO file_info;
 	uint32_t count = 0;
+	uint32_t offset = 0;
 
 	//擦除第6和7扇
 	if(flash_erase_sector(FLASH_SECTOR_6, 2) != 0) {
@@ -123,6 +133,20 @@ static int flush_firmware(void)
 		goto exit;
 	}
 
+	r = mt_f_read(&file, &fw_crc, sizeof(fw_crc), &read);
+
+	if(r != FR_OK) {
+		debug("");
+		goto close;
+	}
+
+	if(read != sizeof(fw_crc)) {
+		debug("");
+		goto close;
+	}
+
+	count += sizeof(fw_crc);
+
 	while(count < file_info.fsize) {
 		r = mt_f_read(&file, buffer, 16, &read);
 
@@ -131,16 +155,16 @@ static int flush_firmware(void)
 			goto close;
 		}
 
-		if(flash_write(USER_FLASH_FIRST_PAGE_ADDRESS + count, buffer, read) != 0) {
+		if(flash_write(USER_FLASH_FIRST_PAGE_ADDRESS + offset, buffer, read) != 0) {
 			debug("");
 			goto close;
 		}
 
-		fw_crc += sum_crc32(buffer, read);
+		offset += read;
 		count += read;
 	}
 
-	crc = sum_crc32((void *)USER_FLASH_FIRST_PAGE_ADDRESS, count);
+	crc = sum_crc32((void *)USER_FLASH_FIRST_PAGE_ADDRESS, offset);
 
 	if(crc == fw_crc) {
 		uint8_t flag = 0x01;
@@ -160,67 +184,42 @@ exit:
 	return ret;
 }
 
-static os_signal_t usb_fs_signal = NULL;
-
-void upgrade_init(void)
+void handle_usb_upgrade(void)
 {
-	usb_fs_signal = signal_create(1);
-}
+	switch(state) {
+		case USB_UPGRADE_STATE_CHECK_FIRMWARE: {
+			int ret = check_firmware();
 
-void start_upgrade(void)
-{
-	signal_send(usb_fs_signal, 0, 0);
-}
-
-void task_usb_upgrade(void const *argument)
-{
-	upgrade_state_t state = UPGRADE_STATE_SYNC;
-	int ret;
-
-	while(1) {
-		switch(state) {
-			case UPGRADE_STATE_SYNC: {
-				ret = signal_wait(usb_fs_signal, NULL, 30 * 1000);
-
-				if(ret == 0) {
-					state = UPGRADE_STATE_CHECK_FIRMWARE;
-				} else {
-					HAL_NVIC_SystemReset();
-				}
+			if(ret == 0) {
+#if defined(USER_APP)
+				uint8_t flag = 0x00;
+				flash_write(APP_CONFIG_ADDRESS, &flag, 1);
+				debug("reset for upgrade!\n");
+				HAL_NVIC_SystemReset();
+#else
+				state = USB_UPGRADE_STATE_FLUSH_FIRMWARE;
+#endif
+			} else {
+				state = USB_UPGRADE_STATE_IDLE;
 			}
-			break;
+		}
+		break;
 
-			case UPGRADE_STATE_CHECK_FIRMWARE: {
-				ret = check_firmware();
+		case USB_UPGRADE_STATE_FLUSH_FIRMWARE: {
+			int ret = flush_firmware();
 
-				if(ret == 0) {
-					state = UPGRADE_STATE_FLUSH_FIRMWARE;
-				} else {
-					HAL_NVIC_SystemReset();
-				}
-			}
-			break;
-
-			case UPGRADE_STATE_FLUSH_FIRMWARE: {
-				ret = flush_firmware();
-
-				if(ret == 0) {
-				} else {
+			if(ret == 0) {
+				if(mt_f_unlink("fw.bin") != FR_OK) {
+					debug("");
 				}
 
 				HAL_NVIC_SystemReset();
 			}
-			break;
-
-			default: {
-			}
-			break;
 		}
-	}
-}
+		break;
 
-void start_usb_upgrade(void)
-{
-	osThreadDef(usb_upgrade, task_usb_upgrade, osPriorityNormal, 0, 128 * 2 * 2);
-	osThreadCreate(osThread(usb_upgrade), NULL);
+		default: {
+		}
+		break;
+	}
 }

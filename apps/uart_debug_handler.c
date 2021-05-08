@@ -6,7 +6,7 @@
  *   文件名称：uart_debug_handler.c
  *   创 建 者：肖飞
  *   创建日期：2020年05月13日 星期三 13时18分00秒
- *   修改日期：2021年05月08日 星期六 16时52分34秒
+ *   修改日期：2021年05月08日 星期六 21时12分55秒
  *   描    述：
  *
  *================================================================*/
@@ -22,19 +22,6 @@ static void fn1(char *arguments)
 
 static void fn2(char *arguments)
 {
-	uint8_t is_app = 0;
-
-#if defined(USER_APP)
-	is_app = 1;
-#endif
-
-	if(is_app == 1) {
-		uint8_t flag = 0x00;
-		flash_write(APP_CONFIG_ADDRESS, &flag, 1);
-		_printf("in app, reset for upgrade!\n");
-		HAL_NVIC_SystemReset();
-		return;
-	}
 }
 
 uint16_t osGetCPUUsage(void);

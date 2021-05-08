@@ -6,7 +6,7 @@
  *   文件名称：app.h
  *   创 建 者：肖飞
  *   创建日期：2019年10月11日 星期五 16时56分29秒
- *   修改日期：2021年05月08日 星期六 13时36分48秒
+ *   修改日期：2021年05月08日 星期六 21时10分10秒
  *   描    述：
  *
  *================================================================*/
@@ -51,8 +51,15 @@ typedef struct {
 
 #pragma pack(pop)
 
+typedef enum {
+	APP_EVENT_NONE = 0,
+	APP_EVENT_USB,
+} app_event_t;
+
 app_info_t *get_app_info(void);
 int app_save_config(void);
+void app_init(void);
+void send_app_event(app_event_t event);
 void app(void const *argument);
 void idle(void const *argument);
 #endif //_APP_H

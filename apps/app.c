@@ -6,7 +6,7 @@
  *   文件名称：app.c
  *   创 建 者：肖飞
  *   创建日期：2019年10月11日 星期五 16时54分03秒
- *   修改日期：2021年05月08日 星期六 17时08分27秒
+ *   修改日期：2021年05月08日 星期六 21时10分46秒
  *   描    述：
  *
  *================================================================*/
@@ -23,7 +23,7 @@
 #include "usart_txrx.h"
 #include "file_log.h"
 #include "uart_debug.h"
-#include "upgrade.h"
+#include "usb_upgrade.h"
 
 #include "log.h"
 
@@ -37,6 +37,7 @@ extern SPI_HandleTypeDef hspi3;
 
 static app_info_t *app_info = NULL;
 static eeprom_info_t *eeprom_info = NULL;
+static os_signal_t app_event = NULL;
 
 app_info_t *get_app_info(void)
 {
@@ -51,6 +52,16 @@ static int app_load_config(void)
 int app_save_config(void)
 {
 	return eeprom_save_config_item(eeprom_info, "eva", &app_info->mechine, sizeof(mechine_info_t), 0);
+}
+
+void app_init(void)
+{
+	app_event = signal_create(1);
+}
+
+void send_app_event(app_event_t event)
+{
+	signal_send(app_event, event, 0);
 }
 
 void app(void const *argument)
@@ -102,13 +113,25 @@ void app(void const *argument)
 		app_info->available = 1;
 	}
 
-#if !defined(USER_APP)
-	start_usb_upgrade();
-#endif
-
 	while(1) {
+		uint32_t event;
+		int ret = signal_wait(app_event, &event, 1000);
+
+		if(ret == 0) {
+			switch(event) {
+				case APP_EVENT_USB: {
+					start_usb_upgrade();
+				}
+				break;
+
+				default: {
+				}
+				break;
+			}
+		}
+
 		//handle_open_log();
-		osDelay(1000);
+		handle_usb_upgrade();
 	}
 }
 
