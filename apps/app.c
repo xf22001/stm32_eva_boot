@@ -108,8 +108,8 @@ void app(void const *argument)
 	} else {
 		debug("app_load_config failed!");
 		snprintf(app_info->mechine.device_id, sizeof(app_info->mechine.device_id), "%s", "0000000000");
-		app_info->mechine.upgrade_enable = 0;
 		debug("device id:\'%s\'!", app_info->mechine.device_id);
+		app_info->mechine.upgrade_enable = 0;
 		app_save_config();
 		app_info->available = 1;
 	}

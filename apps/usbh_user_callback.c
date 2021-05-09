@@ -19,8 +19,6 @@
 
 void usbh_user_callback(USBH_HandleTypeDef *phost, uint8_t id)
 {
-	int ret;
-
 	switch(id) {
 		case HOST_USER_CONNECTION: {
 		}
@@ -28,17 +26,14 @@ void usbh_user_callback(USBH_HandleTypeDef *phost, uint8_t id)
 
 		case HOST_USER_DISCONNECTION: {
 			try_to_close_log();
-			ret = mt_f_mount(0, "", 0);
 
-			if(ret != FR_OK) {
+			if(mt_f_mount(0, "", 0) != FR_OK) {
 			}
 		}
 		break;
 
 		case HOST_USER_CLASS_ACTIVE: {
-			ret = mt_f_mount(get_vfs_fs(), "", 0);
-
-			if(ret == FR_OK) {
+			if(mt_f_mount(get_vfs_fs(), "", 0) == FR_OK) {
 				send_app_event(APP_EVENT_USB);
 			}
 		}
