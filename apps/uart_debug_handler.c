@@ -27,7 +27,7 @@ static void fn2(char *arguments)
 {
 	if(is_app() == 1) {
 		app_info_t *app_info = get_app_info();
-		app_info->mechine.upgrade_enable = 1;
+		app_info->mechine_info.upgrade_enable = 1;
 		app_save_config();
 		_printf("enable upgrade! resetting...\n");
 		HAL_NVIC_SystemReset();
