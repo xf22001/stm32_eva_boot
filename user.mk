@@ -6,7 +6,7 @@
 #   文件名称：user.mk
 #   创 建 者：肖飞
 #   创建日期：2019年10月25日 星期五 13时04分38秒
-#   修改日期：2021年05月09日 星期日 12时06分04秒
+#   修改日期：2021年08月09日 星期一 12时26分43秒
 #   描    述：
 #
 #================================================================
@@ -25,6 +25,7 @@ USER_C_SOURCES += apps/uart_debug_handler.c
 USER_C_SOURCES += apps/os_memory.c
 USER_C_SOURCES += apps/early_sys_callback.c
 USER_C_SOURCES += apps/usbh_user_callback.c
+USER_C_SOURCES += apps/can_config.c
 
 USER_C_SOURCES += apps/modules/app/eeprom_config.c
 USER_C_SOURCES += apps/modules/app/uart_debug.c
@@ -32,15 +33,18 @@ USER_C_SOURCES += apps/modules/app/file_log.c
 USER_C_SOURCES += apps/modules/app/vfs_disk/vfs.c
 USER_C_SOURCES += apps/modules/app/mt_file.c
 USER_C_SOURCES += apps/modules/app/can_data_task.c
-USER_C_SOURCES += apps/modules/app/can_config.c
+USER_C_SOURCES += apps/modules/app/uart_data_task.c
 USER_C_SOURCES += apps/modules/app/duty_cycle_pattern.c
 USER_C_SOURCES += apps/modules/app/usbh_user_callback.c
 USER_C_SOURCES += apps/modules/app/early_sys_callback.c
 USER_C_SOURCES += apps/modules/app/usb_upgrade.c
 USER_C_SOURCES += apps/modules/hardware/flash.c
 USER_C_SOURCES += apps/modules/hardware/eeprom.c
+USER_C_SOURCES += apps/modules/hardware/modbus_slave_txrx.c
+USER_C_SOURCES += apps/modules/hardware/modbus_spec.c
 USER_C_SOURCES += apps/modules/drivers/spi_txrx.c
 USER_C_SOURCES += apps/modules/drivers/can_txrx.c
+USER_C_SOURCES += apps/modules/drivers/can_ops_hal.c
 USER_C_SOURCES += apps/modules/drivers/usart_txrx.c
 USER_C_SOURCES += apps/modules/os/event_helper.c
 USER_C_SOURCES += apps/modules/os/callback_chain.c
@@ -48,7 +52,6 @@ USER_C_SOURCES += apps/modules/os/bitmap_ops.c
 USER_C_SOURCES += apps/modules/os/iap.c
 USER_C_SOURCES += apps/modules/os/os_utils.c
 USER_C_SOURCES += apps/modules/os/cpu_utils.c
-USER_C_SOURCES += apps/modules/os/soft_timer.c
 USER_C_SOURCES += apps/modules/os/log.c
 USER_C_SOURCES += apps/modules/os/object_class.c
 

@@ -34,7 +34,36 @@ end
 define hook-stop
 	#checksp
 end
-	
+
+define find_next_node
+	set $_list = $arg0
+
+	set $offset = (char *)&(($arg1 *)0)->$arg2 - (char *)0
+
+	set $node = ($arg1 *)((char *)$_list->next - $offset)
+
+	if &$node->$arg2.next == $list_head
+		set $node = 0
+	end
+end
+
+# $arg0 should be the address of the list_head
+# $arg1 should be the object type of the list item
+# $arg2 should be the object list field name
+define dump_list
+	set $list_head = $arg0
+	set $loop = $arg0
+
+	find_next_node $loop $arg1 $arg2
+	while $node
+		p *$node
+
+		set $loop = &$node->$arg2
+
+		find_next_node $loop $arg1 $arg2
+	end
+end
+
 b HardFault_Handler
 b BusFault_Handler
 b UsageFault_Handler

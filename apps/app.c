@@ -6,7 +6,7 @@
  *   文件名称：app.c
  *   创 建 者：肖飞
  *   创建日期：2019年10月11日 星期五 16时54分03秒
- *   修改日期：2021年05月08日 星期六 22时52分33秒
+ *   修改日期：2021年08月09日 星期一 12时44分28秒
  *   描    述：
  *
  *================================================================*/
@@ -44,7 +44,7 @@ app_info_t *get_app_info(void)
 	return app_info;
 }
 
-static int app_load_config(void)
+int app_load_config(void)
 {
 	eeprom_layout_t *eeprom_layout = get_eeprom_layout();
 	size_t offset = (size_t)&eeprom_layout->mechine_info_seg.eeprom_mechine_info.mechine_info;
@@ -78,53 +78,33 @@ void app(void const *argument)
 	OS_ASSERT(app_info != NULL);
 
 	app_info->eeprom_info = get_or_alloc_eeprom_info(get_or_alloc_spi_info(&hspi3),
-	                                       spi3_cs_GPIO_Port,
-	                                       spi3_cs_Pin,
-	                                       spi3_wp_GPIO_Port,
-	                                       spi3_wp_Pin);
+	                        spi3_cs_GPIO_Port,
+	                        spi3_cs_Pin,
+	                        spi3_wp_GPIO_Port,
+	                        spi3_wp_Pin);
 
 	OS_ASSERT(app_info->eeprom_info != NULL);
 
-
-	add_log_handler((log_fn_t)log_uart_data);
-	add_log_handler((log_fn_t)log_file_data);
-
-	{
-		uart_info_t *uart_info = get_or_alloc_uart_info(&huart1);
-
-		if(uart_info == NULL) {
-			app_panic();
-		}
-
-		set_log_uart_info(uart_info);
-
-		osThreadDef(uart_debug, task_uart_debug, osPriorityNormal, 0, 128 * 2 * 2);
-		osThreadCreate(osThread(uart_debug), uart_info);
-	}
-
-	//while(is_log_server_valid() == 0) {
-	//	osDelay(1);
-	//}
-
-	debug("===========================================start app============================================");
-
-
 	if(app_load_config() == 0) {
 		debug("app_load_config successful!");
-		debug("device id:\'%s\', server host:\'%s\', server port:\'%s\'!", app_info->mechine_info.device_id, app_info->mechine_info.host, app_info->mechine_info.port);
-		app_info->available = 1;
+		debug("device id:\'%s\', server uri:\'%s\'!", app_info->mechine_info.device_id, app_info->mechine_info.uri);
 	} else {
 		debug("app_load_config failed!");
 		snprintf(app_info->mechine_info.device_id, sizeof(app_info->mechine_info.device_id), "%s", "0000000000");
-		snprintf(app_info->mechine_info.host, sizeof(app_info->mechine_info.host), "%s", "112.74.40.227");
-		snprintf(app_info->mechine_info.port, sizeof(app_info->mechine_info.port), "%s", "12345");
-		snprintf(app_info->mechine_info.path, sizeof(app_info->mechine_info.path), "%s", "");
-		debug("device id:\'%s\', server host:\'%s\', server port:\'%s\'!", app_info->mechine_info.device_id, app_info->mechine_info.host, app_info->mechine_info.port);
-		app_info->mechine_info.upgrade_enable = 0;
+		snprintf(app_info->mechine_info.uri, sizeof(app_info->mechine_info.uri), "%s", "tcp://112.74.40.227:12345");
+		debug("device id:\'%s\', server uri:\'%s\'!", app_info->mechine_info.device_id, app_info->mechine_info.uri);
+		snprintf(app_info->mechine_info.ip, sizeof(app_info->mechine_info.ip), "%d.%d.%d.%d", 10, 42, 0, 122);
+		snprintf(app_info->mechine_info.sn, sizeof(app_info->mechine_info.sn), "%d.%d.%d.%d", 255, 255, 255, 0);
+		snprintf(app_info->mechine_info.gw, sizeof(app_info->mechine_info.gw), "%d.%d.%d.%d", 10, 42, 0, 1);
+		app_info->mechine_info.upgrade_enable = 1;
 		app_save_config();
-		app_info->available = 1;
 	}
 
+	//get_or_alloc_uart_debug_info(&huart1);
+	//add_log_handler((log_fn_t)log_uart_data);
+
+
+	debug("===========================================start app============================================");
 	while(1) {
 		uint32_t event;
 		int ret = signal_wait(app_event, &event, 1000);
