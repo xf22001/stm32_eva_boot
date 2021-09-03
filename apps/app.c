@@ -6,7 +6,7 @@
  *   文件名称：app.c
  *   创 建 者：肖飞
  *   创建日期：2019年10月11日 星期五 16时54分03秒
- *   修改日期：2021年09月03日 星期五 12时52分07秒
+ *   修改日期：2021年09月03日 星期五 20时40分16秒
  *   描    述：
  *
  *================================================================*/
@@ -67,19 +67,11 @@ void app(void const *argument)
 
 	debug("===========================================start app============================================");
 
+	try_to_firmware_upgrade();
+
 	while(1) {
 		uint32_t event;
 		int ret = signal_wait(app_event, &event, 100);
-
-		if(is_app() == 1) {
-			_printf("in app!\n");
-		} else {
-			_printf("in bootloader!\n");
-		}
-
-		if(is_app() != 0) {
-			continue;
-		}
 
 		if(ret == 0) {
 			switch(event) {
@@ -138,6 +130,8 @@ int force_bootloader(void)
 	if(u_uint8_bits.v == 0x07) {
 		ret = 0;
 	}
+
+	HAL_DeInit();
 
 	return ret;
 }
