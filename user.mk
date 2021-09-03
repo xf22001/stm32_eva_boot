@@ -6,7 +6,7 @@
 #   文件名称：user.mk
 #   创 建 者：肖飞
 #   创建日期：2019年10月25日 星期五 13时04分38秒
-#   修改日期：2021年09月03日 星期五 13时53分21秒
+#   修改日期：2021年09月03日 星期五 14时19分05秒
 #   描    述：
 #
 #================================================================
@@ -139,5 +139,5 @@ clean: clean-cscope
 clean-cscope:
 	rm cscope e_cs -rf
 
-app_firmware:
+firmware:
 	python apps/modules/fw.py -f build/eva_boot.bin
