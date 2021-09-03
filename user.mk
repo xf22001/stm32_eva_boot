@@ -6,7 +6,7 @@
 #   文件名称：user.mk
 #   创 建 者：肖飞
 #   创建日期：2019年10月25日 星期五 13时04分38秒
-#   修改日期：2021年08月09日 星期一 12时26分43秒
+#   修改日期：2021年09月03日 星期五 13时53分21秒
 #   描    述：
 #
 #================================================================
@@ -27,7 +27,6 @@ USER_C_SOURCES += apps/early_sys_callback.c
 USER_C_SOURCES += apps/usbh_user_callback.c
 USER_C_SOURCES += apps/can_config.c
 
-USER_C_SOURCES += apps/modules/app/eeprom_config.c
 USER_C_SOURCES += apps/modules/app/uart_debug.c
 USER_C_SOURCES += apps/modules/app/file_log.c
 USER_C_SOURCES += apps/modules/app/vfs_disk/vfs.c
@@ -39,9 +38,18 @@ USER_C_SOURCES += apps/modules/app/usbh_user_callback.c
 USER_C_SOURCES += apps/modules/app/early_sys_callback.c
 USER_C_SOURCES += apps/modules/app/usb_upgrade.c
 USER_C_SOURCES += apps/modules/hardware/flash.c
-USER_C_SOURCES += apps/modules/hardware/eeprom.c
 USER_C_SOURCES += apps/modules/hardware/modbus_slave_txrx.c
 USER_C_SOURCES += apps/modules/hardware/modbus_spec.c
+USER_C_SOURCES += apps/modules/hardware/storage.c
+ifdef CONFIG_STORAGE_25LC1024
+USER_C_SOURCES += apps/modules/hardware/storage_25lc1024.c
+endif
+ifdef CONFIG_STORAGE_24LC128
+USER_C_SOURCES += apps/modules/hardware/storage_24lc128.c
+endif
+ifdef CONFIG_STORAGE_W25Q256
+USER_C_SOURCES += apps/modules/hardware/storage_w25q256.c
+endif
 USER_C_SOURCES += apps/modules/drivers/spi_txrx.c
 USER_C_SOURCES += apps/modules/drivers/can_txrx.c
 USER_C_SOURCES += apps/modules/drivers/can_ops_hal.c
@@ -58,6 +66,18 @@ USER_C_SOURCES += apps/modules/os/object_class.c
 C_SOURCES += $(USER_C_SOURCES)
 
 USER_CFLAGS += -DtraceTASK_SWITCHED_IN=StartIdleMonitor -DtraceTASK_SWITCHED_OUT=EndIdleMonitor
+
+ifdef CONFIG_STORAGE_25LC1024
+USER_CFLAGS += -D$(CONFIG_STORAGE_25LC1024)
+endif
+ifdef CONFIG_STORAGE_24LC128
+USER_CFLAGS += -D$(CONFIG_STORAGE_24LC128)
+endif
+ifdef CONFIG_STORAGE_W25Q256
+USER_CFLAGS += -D$(CONFIG_STORAGE_W25Q256)
+endif
+
+#USER_CFLAGS += -DLOG_NONE
 
 CFLAGS += $(USER_CFLAGS)
 LDFLAGS += -u _printf_float
@@ -118,3 +138,6 @@ cscope: all
 clean: clean-cscope
 clean-cscope:
 	rm cscope e_cs -rf
+
+app_firmware:
+	python apps/modules/fw.py -f build/eva_boot.bin

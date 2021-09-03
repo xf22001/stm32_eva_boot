@@ -6,7 +6,7 @@
  *   文件名称：app.c
  *   创 建 者：肖飞
  *   创建日期：2019年10月11日 星期五 16时54分03秒
- *   修改日期：2021年08月09日 星期一 12时44分28秒
+ *   修改日期：2021年09月03日 星期五 12时52分07秒
  *   描    述：
  *
  *================================================================*/
@@ -14,27 +14,23 @@
 
 #include <string.h>
 
-#include "app_platform.h"
-#include "cmsis_os.h"
-
 #include "iwdg.h"
 
 #include "os_utils.h"
-#include "eeprom_layout.h"
+
 #include "usart_txrx.h"
 #include "file_log.h"
 #include "uart_debug.h"
 #include "usb_upgrade.h"
 
-#include "log.h"
-
 #include "duty_cycle_pattern.h"
+#include "iap.h"
+
+#include "log.h"
 
 extern IWDG_HandleTypeDef hiwdg;
 extern TIM_HandleTypeDef htim4;
 extern UART_HandleTypeDef huart1;
-extern UART_HandleTypeDef huart3;
-extern SPI_HandleTypeDef hspi3;
 
 static app_info_t *app_info = NULL;
 static os_signal_t app_event = NULL;
@@ -44,24 +40,12 @@ app_info_t *get_app_info(void)
 	return app_info;
 }
 
-int app_load_config(void)
-{
-	eeprom_layout_t *eeprom_layout = get_eeprom_layout();
-	size_t offset = (size_t)&eeprom_layout->mechine_info_seg.eeprom_mechine_info.mechine_info;
-	debug("offset:%d", offset);
-	return eeprom_load_config_item(app_info->eeprom_info, "eva", &app_info->mechine_info, sizeof(mechine_info_t), offset);
-}
-
-int app_save_config(void)
-{
-	eeprom_layout_t *eeprom_layout = get_eeprom_layout();
-	size_t offset = (size_t)&eeprom_layout->mechine_info_seg.eeprom_mechine_info.mechine_info;
-	debug("offset:%d", offset);
-	return eeprom_save_config_item(app_info->eeprom_info, "eva", &app_info->mechine_info, sizeof(mechine_info_t), offset);
-}
-
 void app_init(void)
 {
+	if(app_event != NULL) {
+		return;
+	}
+
 	app_event = signal_create(1);
 }
 
@@ -77,37 +61,25 @@ void app(void const *argument)
 
 	OS_ASSERT(app_info != NULL);
 
-	app_info->eeprom_info = get_or_alloc_eeprom_info(get_or_alloc_spi_info(&hspi3),
-	                        spi3_cs_GPIO_Port,
-	                        spi3_cs_Pin,
-	                        spi3_wp_GPIO_Port,
-	                        spi3_wp_Pin);
-
-	OS_ASSERT(app_info->eeprom_info != NULL);
-
-	if(app_load_config() == 0) {
-		debug("app_load_config successful!");
-		debug("device id:\'%s\', server uri:\'%s\'!", app_info->mechine_info.device_id, app_info->mechine_info.uri);
-	} else {
-		debug("app_load_config failed!");
-		snprintf(app_info->mechine_info.device_id, sizeof(app_info->mechine_info.device_id), "%s", "0000000000");
-		snprintf(app_info->mechine_info.uri, sizeof(app_info->mechine_info.uri), "%s", "tcp://112.74.40.227:12345");
-		debug("device id:\'%s\', server uri:\'%s\'!", app_info->mechine_info.device_id, app_info->mechine_info.uri);
-		snprintf(app_info->mechine_info.ip, sizeof(app_info->mechine_info.ip), "%d.%d.%d.%d", 10, 42, 0, 122);
-		snprintf(app_info->mechine_info.sn, sizeof(app_info->mechine_info.sn), "%d.%d.%d.%d", 255, 255, 255, 0);
-		snprintf(app_info->mechine_info.gw, sizeof(app_info->mechine_info.gw), "%d.%d.%d.%d", 10, 42, 0, 1);
-		app_info->mechine_info.upgrade_enable = 1;
-		app_save_config();
-	}
-
 	//get_or_alloc_uart_debug_info(&huart1);
 	//add_log_handler((log_fn_t)log_uart_data);
 
 
 	debug("===========================================start app============================================");
+
 	while(1) {
 		uint32_t event;
-		int ret = signal_wait(app_event, &event, 1000);
+		int ret = signal_wait(app_event, &event, 100);
+
+		if(is_app() == 1) {
+			_printf("in app!\n");
+		} else {
+			_printf("in bootloader!\n");
+		}
+
+		if(is_app() != 0) {
+			continue;
+		}
 
 		if(ret == 0) {
 			switch(event) {
@@ -122,7 +94,6 @@ void app(void const *argument)
 			}
 		}
 
-		//handle_open_log();
 		handle_usb_upgrade();
 	}
 }
@@ -149,4 +120,24 @@ void idle(void const *argument)
 		update_work_led();
 		osDelay(10);
 	}
+}
+
+int force_bootloader(void)
+{
+	int ret = -1;
+	u_uint8_bits_t u_uint8_bits;
+	u_uint8_bits.v = 0;
+
+	HAL_Init();
+	MX_GPIO_Init();
+
+	u_uint8_bits.s.bit0 = (HAL_GPIO_ReadPin(d1_GPIO_Port, d1_Pin) == GPIO_PIN_SET) ? 1 : 0;
+	u_uint8_bits.s.bit1 = (HAL_GPIO_ReadPin(d2_GPIO_Port, d2_Pin) == GPIO_PIN_SET) ? 1 : 0;
+	u_uint8_bits.s.bit2 = (HAL_GPIO_ReadPin(d3_GPIO_Port, d3_Pin) == GPIO_PIN_SET) ? 1 : 0;
+
+	if(u_uint8_bits.v == 0x07) {
+		ret = 0;
+	}
+
+	return ret;
 }

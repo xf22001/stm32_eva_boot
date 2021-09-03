@@ -17,14 +17,15 @@ extern "C"
 {
 #endif
 
-#include "app_platform.h"
-#include "cmsis_os.h"
-
-#include "eeprom.h"
-
 #ifdef __cplusplus
 }
 #endif
+
+#include "app_platform.h"
+#include "cmsis_os.h"
+
+#include "storage.h"
+
 #define VER_MAJOR 0
 #define VER_MINOR 0
 #define VER_REV 0
@@ -50,7 +51,6 @@ typedef struct {
 
 typedef struct {
 	mechine_info_t mechine_info;
-	eeprom_info_t *eeprom_info;
 } app_info_t;
 
 #pragma pack(pop)
