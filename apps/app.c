@@ -6,7 +6,7 @@
  *   文件名称：app.c
  *   创 建 者：肖飞
  *   创建日期：2019年10月11日 星期五 16时54分03秒
- *   修改日期：2021年09月03日 星期五 20时40分16秒
+ *   修改日期：2022年03月28日 星期一 16时40分40秒
  *   描    述：
  *
  *================================================================*/
@@ -40,22 +40,31 @@ app_info_t *get_app_info(void)
 	return app_info;
 }
 
-void app_init(void)
+static void app_event_init(size_t size)
 {
 	if(app_event != NULL) {
 		return;
 	}
 
-	app_event = signal_create(1);
+	app_event = signal_create(size);
+	OS_ASSERT(app_event != NULL);
 }
 
-void send_app_event(app_event_t event)
+void app_init(void)
 {
-	signal_send(app_event, event, 0);
+	app_event_init(10);
+	mem_info_init();
+	mt_file_init();
+}
+
+void send_app_event(app_event_t event, uint32_t timeout)
+{
+	signal_send(app_event, event, timeout);
 }
 
 void app(void const *argument)
 {
+	int ret;
 
 	app_info = (app_info_t *)os_calloc(1, sizeof(app_info_t));
 
@@ -71,16 +80,31 @@ void app(void const *argument)
 
 	while(1) {
 		uint32_t event;
-		int ret = signal_wait(app_event, &event, 100);
+		ret = signal_wait(app_event, &event, 1000);
 
 		if(ret == 0) {
 			switch(event) {
-				case APP_EVENT_USB: {
-					start_usb_upgrade();
+				case APP_EVENT_HOST_USER_CLASS_ACTIVE: {
+					if(mt_f_mount(get_vfs_fs(), "", 0) == FR_OK) {
+						start_usb_upgrade();
+					}
+				}
+				break;
+
+				case APP_EVENT_HOST_USER_CONNECTION: {
+				}
+				break;
+
+				case APP_EVENT_HOST_USER_DISCONNECTION: {
+					try_to_close_log();
+
+					if(mt_f_mount(0, "", 0) != FR_OK) {
+					}
 				}
 				break;
 
 				default: {
+					debug("unhandled event %x", event);
 				}
 				break;
 			}

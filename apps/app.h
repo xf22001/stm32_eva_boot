@@ -17,10 +17,6 @@ extern "C"
 {
 #endif
 
-#ifdef __cplusplus
-}
-#endif
-
 #include "app_platform.h"
 #include "cmsis_os.h"
 
@@ -47,24 +43,36 @@ typedef struct {
 	uint8_t request_type;
 
 	uint8_t upgrade_enable;
+	uint8_t reset_config;
+	char tz;
 } mechine_info_t;
+
+#pragma pack(pop)
 
 typedef struct {
 	mechine_info_t mechine_info;
 } app_info_t;
 
-#pragma pack(pop)
-
 typedef enum {
 	APP_EVENT_NONE = 0,
-	APP_EVENT_USB,
+	APP_EVENT_HOST_USER_SELECT_CONFIGURATION,
+	APP_EVENT_HOST_USER_CLASS_ACTIVE,
+	APP_EVENT_HOST_USER_CLASS_SELECTED,
+	APP_EVENT_HOST_USER_CONNECTION,
+	APP_EVENT_HOST_USER_DISCONNECTION,
+	APP_EVENT_HOST_USER_UNRECOVERED_ERROR,
 } app_event_t;
 
 app_info_t *get_app_info(void);
 int app_load_config(void);
 int app_save_config(void);
 void app_init(void);
-void send_app_event(app_event_t event);
+void send_app_event(app_event_t event, uint32_t timeout);
 void app(void const *argument);
 void idle(void const *argument);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif //_APP_H
